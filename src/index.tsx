@@ -2,7 +2,7 @@ import React from 'react';
 import type { PluginComponentProps } from './hs-plugin';
 import { hostFrameStyle } from './host-style';
 import { Icon, I } from './icons';
-import { Task, plain, tidy, isOnList, pushRecent, quickPicks, suggest, sortTasks } from './logic';
+import { Task, plain, tidy, isOnList, pushRecent, quickPicks, suggest, sortTasks, parseLabels, filterByLabels } from './logic';
 
 const PLUGIN_ID = 'grocery-list';
 const API = 'https://api.todoist.com/api/v1';
@@ -21,8 +21,8 @@ async function call(url: string, method = 'GET', body?: unknown) {
   return t ? JSON.parse(t) : null;
 }
 
-function readRecent(): string[] { try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch { return []; } }
-function writeRecent(r: string[]) { try { localStorage.setItem(RECENT_KEY, JSON.stringify(r)); } catch { /* ignore */ } }
+function readRecent(key: string): string[] { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } }
+function writeRecent(key: string, r: string[]) { try { localStorage.setItem(key, JSON.stringify(r)); } catch { /* ignore */ } }
 
 const ROWS = [
   ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
@@ -33,7 +33,10 @@ const ROWS = [
 
 export default function GroceryList({ config, style }: PluginComponentProps) {
   const projectName = String(config.projectName ?? 'Groceries');
-  const title = String(config.title ?? projectName);
+  const labels = parseLabels(String(config.labelFilter ?? ''));
+  const includeUnlabelled = config.includeUnlabelled === true;
+  const title = String(config.title || (labels.length ? labels.join(' · ') : projectName));
+  const recentKey = RECENT_KEY + (labels.length ? ':' + labels.join(',').toLowerCase() : '');
   const accent = String(config.accentColor || '#16a34a');
   const staples = String(config.staples ?? '').split(',').map((s) => s.trim()).filter(Boolean);
   const maxPicks = Number(config.quickPicks ?? 8);
@@ -43,13 +46,13 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
   const [projectId, setProjectId] = React.useState<string | null>(null);
   const [tasks, setTasks] = React.useState<Task[] | null>(null);
   const [error, setError] = React.useState<string | null>(null);
-  const [recent, setRecent] = React.useState<string[]>(readRecent);
+  const [recent, setRecent] = React.useState<string[]>(() => readRecent(recentKey));
   const [busy, setBusy] = React.useState<Set<string>>(new Set());
   const [typing, setTyping] = React.useState(false);
   const [text, setText] = React.useState('');
   const [shift, setShift] = React.useState(true);
 
-  const remember = (name: string) => setRecent((r) => { const n = pushRecent(r, name); writeRecent(n); return n; });
+  const remember = (name: string) => setRecent((r) => { const n = pushRecent(r, name); writeRecent(recentKey, n); return n; });
 
   const load = React.useCallback(async () => {
     try {
@@ -61,13 +64,14 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
         pid = String(p.id); setProjectId(pid);
       }
       const tj = await call(`${API}/tasks?project_id=${pid}&limit=200`);
-      setTasks(sortTasks(tj?.results ?? tj ?? []));
+      setTasks(sortTasks(filterByLabels(tj?.results ?? tj ?? [], labels, includeUnlabelled)));
       setError(null);
     } catch (e) {
       const m = String((e as Error).message);
       setError(/HTTP (401|403|500)/.test(m) ? 'Add your Todoist API token in Plugins → grocery-list.' : 'Can’t reach Todoist right now.');
     }
-  }, [projectId, projectName]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, projectName, labels.join(','), includeUnlabelled]);
 
   React.useEffect(() => { load(); const id = setInterval(load, refreshMs); return () => clearInterval(id); }, [load, refreshMs]);
 
@@ -86,10 +90,10 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
   const add = async (raw: string) => {
     const name = tidy(raw);
     if (!name || !projectId || isOnList(tasks ?? [], name)) return;
-    const tmp: Task = { id: `tmp-${Date.now()}`, content: name, child_order: 1e9 };
+    const tmp: Task = { id: `tmp-${Date.now()}`, content: name, child_order: 1e9, labels: labels.slice(0, 1) };
     setTasks((l) => [...(l ?? []), tmp]); remember(name);
     try {
-      const created = await call(`${API}/tasks`, 'POST', { content: name, project_id: projectId });
+      const created = await call(`${API}/tasks`, 'POST', { content: name, project_id: projectId, ...(labels.length ? { labels: [labels[0]] } : {}) });
       setTasks((l) => (l ?? []).map((x) => (x.id === tmp.id ? { ...created, child_order: created.child_order ?? 1e9 } : x)));
     } catch { setTasks((l) => (l ?? []).filter((x) => x.id !== tmp.id)); }
   };

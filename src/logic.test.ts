@@ -8,3 +8,10 @@ describe('grocery logic', () => {
   it('quick picks skip list items', () => expect(quickPicks(['Eggs'], ['Milk', 'Eggs', 'Bread'], L('Bread'), 5)).toEqual(['Eggs', 'Milk']));
   it('suggest prefix first', () => expect(suggest('ba', ['Bread', 'Bananas', 'Kebab sauce', 'Bacon'], [], 3)).toEqual(['Bananas', 'Bacon', 'Kebab sauce']));
 });
+import { filterByLabels, parseLabels } from './logic';
+describe('label filter', () => {
+  const T = [{ id: '1', content: 'Milk', labels: ['IGA'] }, { id: '2', content: 'Paper towels', labels: ['costco'] }, { id: '3', content: 'Pepsi', labels: [] }];
+  it('by label, case-insensitive', () => expect(filterByLabels(T, parseLabels('Costco'), false).map((t) => t.id)).toEqual(['2']));
+  it('with unlabelled', () => expect(filterByLabels(T, ['IGA'], true).map((t) => t.id)).toEqual(['1', '3']));
+  it('no filter = all', () => expect(filterByLabels(T, [], false).length).toBe(3));
+});

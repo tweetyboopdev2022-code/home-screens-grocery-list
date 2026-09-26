@@ -1,6 +1,6 @@
 // Pure helpers for the Grocery List plugin.
 
-export interface Task { id: string; content: string; order?: number; child_order?: number; added_at?: string }
+export interface Task { id: string; content: string; order?: number; child_order?: number; added_at?: string; labels?: string[] }
 
 /** Todoist content can carry Markdown/links; the wall shows plain text. */
 export function plain(content: string): string {
@@ -57,4 +57,19 @@ export function suggest(query: string, pool: string[], list: Task[], max = 4): s
 
 export function sortTasks(tasks: Task[]): Task[] {
   return [...tasks].sort((a, b) => (a.child_order ?? a.order ?? 0) - (b.child_order ?? b.order ?? 0));
+}
+
+export function parseLabels(s: string): string[] {
+  return s.split(',').map((x) => x.trim()).filter(Boolean);
+}
+
+/** Tasks for this block: any of the given labels; optionally also tasks with none of the known store labels. */
+export function filterByLabels(tasks: Task[], labels: string[], includeUnlabelled: boolean): Task[] {
+  if (!labels.length) return tasks;
+  const want = new Set(labels.map(normalize));
+  return tasks.filter((t) => {
+    const ls = (t.labels ?? []).map(normalize);
+    if (ls.some((l) => want.has(l))) return true;
+    return includeUnlabelled && ls.length === 0;
+  });
 }
