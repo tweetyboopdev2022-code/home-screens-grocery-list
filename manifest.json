@@ -1,0 +1,41 @@
+{
+  "id": "grocery-list",
+  "name": "Grocery List",
+  "version": "1.0.0",
+  "description": "A Todoist project as a touch grocery list: tap to check off, × to remove, add with the on-screen keyboard or one-tap 'Add again' chips.",
+  "author": "Tanya",
+  "license": "MIT",
+  "minAppVersion": "1.7.1",
+  "moduleType": "grocery-list",
+  "category": "Personal",
+  "icon": "ListChecks",
+  "defaultConfig": {
+    "title": "Groceries",
+    "projectName": "Groceries",
+    "staples": "Milk, Eggs, Bread, Bananas, Apples, Cheese, Yogurt, Butter, Coffee, Dog food, Cat litter",
+    "quickPicks": 8,
+    "accentColor": "#16a34a",
+    "refreshIntervalMs": 60000
+  },
+  "defaultSize": { "w": 490, "h": 760 },
+  "defaultStyle": { "fontSize": 28, "padding": 28, "borderRadius": 28 },
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "title": { "type": "string", "title": "Title", "ui:widget": "text", "ui:group": "Content" },
+      "projectName": { "type": "string", "title": "Todoist project", "description": "Exact name of the Todoist project that holds the list.", "ui:widget": "text", "ui:group": "Content" },
+      "staples": { "type": "string", "title": "Staples", "description": "Comma-separated items always offered under 'Add again'.", "ui:widget": "textarea", "ui:group": "Content" },
+      "quickPicks": { "type": "number", "title": "How many 'Add again' chips", "minimum": 0, "maximum": 16, "ui:widget": "slider", "ui:step": 1, "ui:group": "Content" },
+      "accentColor": { "type": "string", "title": "Accent colour", "ui:widget": "color", "ui:group": "Look" },
+      "refreshIntervalMs": { "type": "number", "title": "Refresh (ms)", "minimum": 30000, "maximum": 600000, "ui:widget": "slider", "ui:step": 30000, "ui:group": "Look" }
+    }
+  },
+  "exports": { "component": "default" },
+  "dataRequirements": [],
+  "prefetchUrl": null,
+  "secrets": [
+    { "key": "todoist_token", "label": "Todoist API token", "description": "Todoist → Settings → Integrations → Developer → API token.", "required": true, "placeholder": "Your Todoist API token" }
+  ],
+  "allowedDomains": ["api.todoist.com"],
+  "permissions": ["network", "secrets", "storage"]
+}
