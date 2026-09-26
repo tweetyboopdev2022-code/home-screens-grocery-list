@@ -1,7 +1,7 @@
 {
   "id": "grocery-list",
   "name": "Grocery List",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A Todoist project as a touch grocery list: tap to check off, × to remove, add with the on-screen keyboard or 'Add again' chips. Filter by label to make one block per store (IGA, Costco…).",
   "author": "Tanya",
   "license": "MIT",
@@ -17,7 +17,8 @@
     "accentColor": "#16a34a",
     "refreshIntervalMs": 60000,
     "labelFilter": "",
-    "includeUnlabelled": false
+    "includeUnlabelled": false,
+    "storeLabels": "IGA, Costco, Walmart, Amazon, Other"
   },
   "defaultSize": {
     "w": 490,
@@ -58,6 +59,13 @@
         "title": "Also show items with no label",
         "description": "Handy for a catch-all block, e.g. the store you shop at most.",
         "ui:widget": "toggle",
+        "ui:group": "Content"
+      },
+      "storeLabels": {
+        "type": "string",
+        "title": "Store choices",
+        "description": "Comma-separated store labels offered when adding an item. The block's own label is pre-selected.",
+        "ui:widget": "text",
         "ui:group": "Content"
       },
       "staples": {
