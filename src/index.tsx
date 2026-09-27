@@ -115,33 +115,48 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
   const sugg = suggest(text, [...recent, ...staples], list, 3);
 
   const grouped = config.groupByStore === true;
+  const hideEmpty = config.hideEmptyStores === true;
+  const [checked, setChecked] = React.useState<Set<string>>(new Set());
+  const tick = (t: Task) => {
+    if (checked.has(t.id)) return;
+    setChecked((c) => new Set(c).add(t.id));
+    setTimeout(() => { complete(t).finally(() => setChecked((c) => { const n = new Set(c); n.delete(t.id); return n; })); }, 700);
+  };
+  const openAdd = (st: string) => { setText(''); setShift(true); setStore(st); setTyping(true); };
   const storeColors: Record<string, string> = {};
   String(config.storeColors ?? 'IGA:#16a34a, Costco:#e31837, Walmart:#0071ce, Amazon:#e47911, Other:#78716c')
     .split(',').forEach((pair) => { const [k, v] = pair.split(':').map((x) => x.trim()); if (k && v) storeColors[normalize(k)] = v; });
   const groups = (() => {
     const out: { name: string; color: string; items: Task[] }[] = [];
     const used = new Set<string>();
+    const known = (t: Task) => (t.labels ?? []).some((l) => stores.some((st) => normalize(st) === normalize(l)));
+    const catchAll = stores.find((st) => normalize(st) === 'other');
     for (const st of stores) {
-      const items = list.filter((t) => !used.has(t.id) && (t.labels ?? []).some((l) => normalize(l) === normalize(st)));
+      const items = list.filter((t) => !used.has(t.id) && ((t.labels ?? []).some((l) => normalize(l) === normalize(st)) || (st === catchAll && !known(t))));
       items.forEach((t) => used.add(t.id));
-      if (items.length) out.push({ name: st, color: storeColors[normalize(st)] ?? accent, items });
+      if (items.length || !hideEmpty) out.push({ name: st, color: storeColors[normalize(st)] ?? accent, items });
     }
     const rest = list.filter((t) => !used.has(t.id));
     if (rest.length) out.push({ name: 'Any store', color: ink(0.5), items: rest });
     return out;
   })();
-  const renderRow = (t: Task) => (
-          <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55em', padding: '0.4em 0.4em 0.4em 0.6em', borderRadius: '0.5em', background: ink(0.06), opacity: busy.has(t.id) || t.id.startsWith('tmp-') ? 0.45 : 1, transition: 'opacity .2s' }}>
-            <button aria-label={`Got ${plain(t.content)}`} onClick={() => complete(t)} style={btn({ width: '1.1em', height: '1.1em', flex: '0 0 1.1em', borderRadius: '50%', background: 'transparent', border: `0.12em solid ${ink(0.4)}`, padding: 0 })} />
-            <span style={{ flex: 1, minWidth: 0, fontSize: '0.85em', fontWeight: 500, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{plain(t.content)}</span>
-            {!grouped && labels.length !== 1 && (t.labels ?? []).filter((l) => stores.some((s) => normalize(s) === normalize(l))).slice(0, 1).map((l) => (
-              <span key={l} style={{ fontSize: '0.55em', fontWeight: 500, padding: '0.2em 0.55em', borderRadius: '0.4em', background: ink(0.08), opacity: 0.75, whiteSpace: 'nowrap' }}>{l}</span>
-            ))}
-            <button aria-label={`Remove ${plain(t.content)}`} onClick={() => remove(t)} style={btn({ background: 'transparent', padding: '0.25em', opacity: 0.35, display: 'flex' })}>
-              <Icon d={I.x} size="0.9em" />
-            </button>
-          </div>
-  );
+  const renderRow = (t: Task, color: string = accent) => {
+    const on = checked.has(t.id);
+    return (
+      <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55em', padding: '0.4em 0.4em 0.4em 0.55em', borderRadius: '0.5em', background: ink(0.06), opacity: on ? 0.55 : busy.has(t.id) || t.id.startsWith('tmp-') ? 0.45 : 1, transition: 'opacity .3s' }}>
+        <button aria-label={`Got ${plain(t.content)}`} onClick={() => tick(t)} style={btn({ width: '1.15em', height: '1.15em', flex: '0 0 1.15em', borderRadius: '0.3em', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: on ? color : 'transparent', border: `0.12em solid ${on ? color : ink(0.4)}`, transition: 'background .2s' })}>
+          {on && <Icon d={I.check} size="0.8em" stroke={3} />}
+        </button>
+        <span style={{ flex: 1, minWidth: 0, fontSize: '0.85em', fontWeight: 500, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textDecoration: on ? 'line-through' : 'none' }}>{plain(t.content)}</span>
+        {!grouped && labels.length !== 1 && (t.labels ?? []).filter((l) => stores.some((s) => normalize(s) === normalize(l))).slice(0, 1).map((l) => (
+          <span key={l} style={{ fontSize: '0.55em', fontWeight: 500, padding: '0.2em 0.55em', borderRadius: '0.4em', background: ink(0.08), opacity: 0.75, whiteSpace: 'nowrap' }}>{l}</span>
+        ))}
+        <button aria-label={`Remove ${plain(t.content)}`} onClick={() => remove(t)} style={btn({ background: 'transparent', padding: '0.25em', opacity: 0.35, display: 'flex' })}>
+          <Icon d={I.x} size="0.9em" />
+        </button>
+      </div>
+    );
+  };
 
   const root: React.CSSProperties = {
     ...hostFrameStyle(style as any),
@@ -157,9 +172,9 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5em', marginBottom: '0.25em' }}>
       <h2 style={{ margin: 0, fontSize: '1.1em', fontWeight: 600 }}>{title}</h2>
       <span style={{ fontSize: '0.65em', opacity: 0.35 }}>{tasks ? `${list.length} item${list.length === 1 ? '' : 's'}` : ''}</span>
-      <button onClick={() => { setText(''); setShift(true); setStore(defaultStore); setTyping(true); }} style={btn({ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.3em', padding: '0.35em 0.75em', background: accent, color: '#fff', fontSize: '0.75em', fontWeight: 600, borderRadius: '999px' })}>
+      {!grouped && <button onClick={() => openAdd(defaultStore)} style={btn({ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.3em', padding: '0.35em 0.75em', background: accent, color: '#fff', fontSize: '0.75em', fontWeight: 600, borderRadius: '999px' })}>
         <Icon d={I.plus} size="1.1em" stroke={2.5} /> Add
-      </button>
+      </button>}
     </div>
   );
 
@@ -170,30 +185,35 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
 
       <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: '0.25em' }}>
         {error && <div style={{ margin: 'auto', textAlign: 'center', fontSize: '0.8em', opacity: 0.6, maxWidth: '18em' }}>{error}</div>}
-        {!error && tasks && list.length === 0 && (
+        {!grouped && !error && tasks && list.length === 0 && (
           <div style={{ margin: 'auto', textAlign: 'center', opacity: 0.35 }}>
             <Icon d={I.cart} size="2em" stroke={1.5} style={{ margin: '0 auto 0.3em' }} />
             <div style={{ fontSize: '0.8em' }}>List is empty</div>
           </div>
         )}
         {!grouped && list.map((t) => renderRow(t))}
-        {grouped && (
-          <div style={{ columnWidth: '15em', columnGap: '1.2em', columnFill: 'balance' }}>
+        {grouped && !error && (
+          <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: `repeat(${groups.length > 3 ? 2 : 1}, minmax(0, 1fr))`, gridAutoRows: 'minmax(0, 1fr)', gap: '0.7em' }}>
             {groups.map((g) => (
-              <div key={g.name} style={{ breakInside: 'avoid', marginBottom: '0.8em', display: 'flex', flexDirection: 'column', gap: '0.25em' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45em', padding: '0 0.15em 0.15em' }}>
-                  <span style={{ width: '0.55em', height: '0.55em', borderRadius: '50%', background: g.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: '0.7em', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: g.color }}>{g.name}</span>
-                  <span style={{ fontSize: '0.6em', opacity: 0.35 }}>{g.items.length}</span>
+              <div key={g.name} style={{ display: 'flex', flexDirection: 'column', gap: '0.3em', minHeight: 0, overflow: 'hidden', padding: '0.6em 0.6em 0.5em', borderRadius: '0.8em', background: ink(0.03), borderTop: `0.22em solid ${g.color}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45em', marginBottom: '0.15em' }}>
+                  <span style={{ fontSize: '0.8em', fontWeight: 600, color: g.color }}>{g.name}</span>
+                  <span style={{ fontSize: '0.6em', opacity: 0.35 }}>{g.items.length || ''}</span>
+                  {g.name !== 'Any store' && (
+                    <button aria-label={`Add to ${g.name}`} onClick={() => openAdd(g.name)} style={btn({ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.25em', padding: '0.25em 0.6em', background: g.color, color: '#fff', fontSize: '0.62em', fontWeight: 600, borderRadius: '999px' })}>
+                      <Icon d={I.plus} size="1.1em" stroke={2.5} /> Add
+                    </button>
+                  )}
                 </div>
-                {g.items.map((t) => renderRow(t))}
+                {g.items.length === 0 && <div style={{ margin: 'auto', fontSize: '0.7em', opacity: 0.35 }}>Nothing needed</div>}
+                {g.items.map((t) => renderRow(t, g.color))}
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {picks.length > 0 && !error && (
+      {!grouped && picks.length > 0 && !error && (
         <div style={{ marginTop: '0.6em' }}>
           <div style={{ fontSize: '0.6em', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.6, marginBottom: '0.4em' }}>Add again</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35em' }}>
