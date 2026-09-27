@@ -1,0 +1,145 @@
+{
+  "id": "grocery-list",
+  "name": "Grocery List",
+  "version": "1.3.0",
+  "description": "A Todoist project as a touch grocery list: tap to check off, × to remove, add with the on-screen keyboard or 'Add again' chips. Filter by label to make one block per store (IGA, Costco…).",
+  "author": "Tanya",
+  "license": "MIT",
+  "minAppVersion": "1.7.1",
+  "moduleType": "grocery-list",
+  "category": "Personal",
+  "icon": "ListChecks",
+  "defaultConfig": {
+    "title": "",
+    "projectName": "Groceries",
+    "staples": "Milk, Eggs, Bread, Bananas, Apples, Cheese, Yogurt, Butter, Coffee, Dog food, Cat litter",
+    "quickPicks": 8,
+    "accentColor": "#16a34a",
+    "refreshIntervalMs": 60000,
+    "labelFilter": "",
+    "includeUnlabelled": false,
+    "storeLabels": "IGA, Costco, Walmart, Amazon, Other",
+    "groupByStore": false,
+    "storeColors": "IGA:#16a34a, Costco:#e31837, Walmart:#0071ce, Amazon:#e47911, Other:#78716c"
+  },
+  "defaultSize": {
+    "w": 490,
+    "h": 760
+  },
+  "defaultStyle": {
+    "fontSize": 28,
+    "padding": 28,
+    "borderRadius": 28
+  },
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": "string",
+        "title": "Title",
+        "ui:widget": "text",
+        "ui:group": "Content",
+        "description": "Leave empty to use the store label (or the project name)."
+      },
+      "projectName": {
+        "type": "string",
+        "title": "Todoist project",
+        "description": "Exact name of the Todoist project that holds the list.",
+        "ui:widget": "text",
+        "ui:group": "Content"
+      },
+      "labelFilter": {
+        "type": "string",
+        "title": "Only show labels",
+        "description": "Comma-separated Todoist labels, e.g. IGA or Costco. Items added from this block get the first label. Leave empty to show the whole project.",
+        "ui:widget": "text",
+        "ui:placeholder": "IGA",
+        "ui:group": "Content"
+      },
+      "includeUnlabelled": {
+        "type": "boolean",
+        "title": "Also show items with no label",
+        "description": "Handy for a catch-all block, e.g. the store you shop at most.",
+        "ui:widget": "toggle",
+        "ui:group": "Content"
+      },
+      "storeLabels": {
+        "type": "string",
+        "title": "Store choices",
+        "description": "Comma-separated store labels offered when adding an item. The block's own label is pre-selected.",
+        "ui:widget": "text",
+        "ui:group": "Content"
+      },
+      "staples": {
+        "type": "string",
+        "title": "Staples",
+        "description": "Comma-separated items always offered under 'Add again'.",
+        "ui:widget": "textarea",
+        "ui:group": "Content"
+      },
+      "quickPicks": {
+        "type": "number",
+        "title": "How many 'Add again' chips",
+        "minimum": 0,
+        "maximum": 16,
+        "ui:widget": "slider",
+        "ui:step": 1,
+        "ui:group": "Content"
+      },
+      "accentColor": {
+        "type": "string",
+        "title": "Accent colour",
+        "ui:widget": "color",
+        "ui:group": "Look"
+      },
+      "refreshIntervalMs": {
+        "type": "number",
+        "title": "Refresh (ms)",
+        "minimum": 30000,
+        "maximum": 600000,
+        "ui:widget": "slider",
+        "ui:step": 30000,
+        "ui:group": "Look"
+      },
+      "groupByStore": {
+        "type": "boolean",
+        "title": "Group by store",
+        "description": "Show one list split into store sections (empty stores are hidden). Best on a wide block.",
+        "ui:group": "Content"
+      },
+      "storeColors": {
+        "type": "string",
+        "title": "Store colours",
+        "description": "Store:colour pairs for the section headings, e.g. IGA:#16a34a, Costco:#e31837",
+        "ui:widget": "text",
+        "ui:group": "Content",
+        "ui:showWhen": {
+          "field": "groupByStore",
+          "equals": true
+        }
+      }
+    }
+  },
+  "exports": {
+    "component": "default"
+  },
+  "dataRequirements": [],
+  "prefetchUrl": null,
+  "secrets": [
+    {
+      "key": "todoist_token",
+      "label": "Todoist API token",
+      "description": "Todoist → Settings → Integrations → Developer → API token.",
+      "required": true,
+      "placeholder": "Your Todoist API token"
+    }
+  ],
+  "allowedDomains": [
+    "api.todoist.com"
+  ],
+  "permissions": [
+    "network",
+    "secrets",
+    "storage"
+  ]
+}
