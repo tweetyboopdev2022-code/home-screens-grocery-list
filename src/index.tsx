@@ -217,10 +217,12 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
           if (!featured || !rest.length) {
             return <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '0.7em' }}>{groups.map((g) => section(g, weight(g)))}</div>;
           }
+          // featured store spans two rows in the left column; the rest fill the grid around it
+          const rows = Math.ceil((rest.length + 2) / 2);
           return (
-            <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '0.7em' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>{section(featured, 1)}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7em', minHeight: 0 }}>{rest.map((g) => section(g, weight(g)))}</div>
+            <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`, gap: '0.7em' }}>
+              <div style={{ gridColumn: 1, gridRow: 'span 2', display: 'flex', flexDirection: 'column', minHeight: 0 }}>{section(featured, 1)}</div>
+              {rest.map((g) => <div key={g.name} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>{section(g, 1)}</div>)}
             </div>
           );
         })()}

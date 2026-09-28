@@ -1,7 +1,7 @@
 {
   "id": "grocery-list",
   "name": "Grocery List",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "A Todoist project as a touch grocery list: tap to check off, × to remove, add with the on-screen keyboard or 'Add again' chips. Filter by label to make one block per store (IGA, Costco…).",
   "author": "Tanya",
   "license": "MIT",
@@ -132,8 +132,8 @@
       },
       "featuredStore": {
         "type": "string",
-        "title": "Tall store column",
-        "description": "This store gets the whole left column; the others stack on the right, sized by how many items they have. Empty = all stacked.",
+        "title": "Double-height store",
+        "description": "This store is twice as tall as the others (two grid rows). Empty = all the same size.",
         "ui:widget": "text",
         "ui:group": "Content",
         "ui:showWhen": {
