@@ -1,7 +1,7 @@
 {
   "id": "grocery-list",
   "name": "Grocery List",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "A Todoist project as a touch grocery list: tap to check off, × to remove, add with the on-screen keyboard or 'Add again' chips. Filter by label to make one block per store (IGA, Costco…).",
   "author": "Tanya",
   "license": "MIT",
@@ -21,7 +21,8 @@
     "storeLabels": "IGA, Costco, Walmart, Amazon, Other",
     "groupByStore": false,
     "storeColors": "IGA:#16a34a, Costco:#e31837, Walmart:#0071ce, Amazon:#e47911, Other:#78716c",
-    "hideEmptyStores": false
+    "hideEmptyStores": false,
+    "featuredStore": "IGA"
   },
   "defaultSize": {
     "w": 490,
@@ -123,6 +124,17 @@
         "type": "boolean",
         "title": "Hide empty stores",
         "description": "Leave out store sections with nothing on the list.",
+        "ui:group": "Content",
+        "ui:showWhen": {
+          "field": "groupByStore",
+          "equals": true
+        }
+      },
+      "featuredStore": {
+        "type": "string",
+        "title": "Tall store column",
+        "description": "This store gets the whole left column; the others stack on the right, sized by how many items they have. Empty = all stacked.",
+        "ui:widget": "text",
         "ui:group": "Content",
         "ui:showWhen": {
           "field": "groupByStore",

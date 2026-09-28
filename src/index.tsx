@@ -192,25 +192,38 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
           </div>
         )}
         {!grouped && list.map((t) => renderRow(t))}
-        {grouped && !error && (
-          <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: `repeat(${groups.length > 3 ? 2 : 1}, minmax(0, 1fr))`, gridAutoRows: 'minmax(0, 1fr)', gap: '0.7em' }}>
-            {groups.map((g) => (
-              <div key={g.name} style={{ display: 'flex', flexDirection: 'column', gap: '0.3em', minHeight: 0, overflow: 'hidden', padding: '0.6em 0.6em 0.5em', borderRadius: '0.8em', background: ink(0.03), borderTop: `0.22em solid ${g.color}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45em', marginBottom: '0.15em' }}>
-                  <span style={{ fontSize: '0.8em', fontWeight: 600, color: g.color }}>{g.name}</span>
-                  <span style={{ fontSize: '0.6em', opacity: 0.35 }}>{g.items.length || ''}</span>
-                  {g.name !== 'Any store' && (
-                    <button aria-label={`Add to ${g.name}`} onClick={() => openAdd(g.name)} style={btn({ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.25em', padding: '0.25em 0.6em', background: g.color, color: '#fff', fontSize: '0.62em', fontWeight: 600, borderRadius: '999px' })}>
-                      <Icon d={I.plus} size="1.1em" stroke={2.5} /> Add
-                    </button>
-                  )}
-                </div>
-                {g.items.length === 0 && <div style={{ margin: 'auto', fontSize: '0.7em', opacity: 0.35 }}>Nothing needed</div>}
-                {g.items.map((t) => renderRow(t, g.color))}
+        {grouped && !error && (() => {
+          const section = (g: typeof groups[number], grow: number) => (
+            <div key={g.name} style={{ display: 'flex', flexDirection: 'column', gap: '0.3em', minHeight: '5.5em', flex: `${grow} 1 0`, overflow: 'hidden', padding: '0.6em 0.6em 0.5em', borderRadius: '0.8em', background: ink(0.03), borderTop: `0.22em solid ${g.color}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45em', marginBottom: '0.15em', flexShrink: 0 }}>
+                <span style={{ fontSize: '0.8em', fontWeight: 600, color: g.color }}>{g.name}</span>
+                <span style={{ fontSize: '0.6em', opacity: 0.35 }}>{g.items.length || ''}</span>
+                {g.name !== 'Any store' && (
+                  <button aria-label={`Add to ${g.name}`} onClick={() => openAdd(g.name)} style={btn({ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.25em', padding: '0.25em 0.6em', background: g.color, color: '#fff', fontSize: '0.62em', fontWeight: 600, borderRadius: '999px' })}>
+                    <Icon d={I.plus} size="1.1em" stroke={2.5} /> Add
+                  </button>
+                )}
               </div>
-            ))}
-          </div>
-        )}
+              {g.items.length === 0 ? <div style={{ margin: 'auto', fontSize: '0.7em', opacity: 0.35 }}>Nothing needed</div> : (
+                <div className="gl-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.25em', scrollbarWidth: 'none', overscrollBehavior: 'contain' } as React.CSSProperties}>
+                  {g.items.map((t) => renderRow(t, g.color))}
+                </div>
+              )}
+            </div>
+          );
+          const featured = groups.find((g) => normalize(g.name) === normalize(String(config.featuredStore ?? 'IGA')));
+          const rest = groups.filter((g) => g !== featured);
+          const weight = (g: typeof groups[number]) => Math.max(1, g.items.length) + 1.5;
+          if (!featured || !rest.length) {
+            return <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '0.7em' }}>{groups.map((g) => section(g, weight(g)))}</div>;
+          }
+          return (
+            <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '0.7em' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>{section(featured, 1)}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7em', minHeight: 0 }}>{rest.map((g) => section(g, weight(g)))}</div>
+            </div>
+          );
+        })()}
       </div>
 
       {!grouped && picks.length > 0 && !error && (
