@@ -240,6 +240,25 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
         })()}
       </div>
 
+      {grouped && hideEmpty && !error && (() => {
+        // Stores hidden because they're empty still need a way to add to them.
+        const hidden = stores.filter((st) => normalize(st) !== 'other' && !groups.some((g) => normalize(g.name) === normalize(st)));
+        if (!hidden.length) return null;
+        return (
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4em', marginTop: '0.6em', flexShrink: 0 }}>
+            <span style={{ fontSize: '0.6em', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.55, marginRight: '0.2em' }}>Add to</span>
+            {hidden.map((st) => {
+              const col = storeColors[normalize(st)] ?? accent;
+              return (
+                <button key={st} aria-label={`Add to ${st}`} onClick={() => openAdd(st)} style={btn({ display: 'flex', alignItems: 'center', gap: '0.3em', padding: '0.35em 0.8em', fontSize: '0.72em', fontWeight: 600, borderRadius: '999px', color: col, border: `0.1em solid ${col}`, background: 'transparent' })}>
+                  <Icon d={I.plus} size="1em" stroke={2.5} />{st}
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
+
       {!grouped && picks.length > 0 && !error && (
         <div style={{ marginTop: '0.6em' }}>
           <div style={{ fontSize: '0.6em', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.6, marginBottom: '0.4em' }}>Add again</div>
