@@ -252,7 +252,7 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
 
       {grouped && hideEmpty && !error && (() => {
         // Stores hidden because they're empty still need a way to add to them.
-        const hidden = stores.filter((st) => normalize(st) !== 'other' && !groups.some((g) => normalize(g.name) === normalize(st)));
+        const hidden = stores.filter((st) => !groups.some((g) => normalize(g.name) === normalize(st)));
         if (!hidden.length) return null;
         return (
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4em', marginTop: '0.6em', flexShrink: 0 }}>

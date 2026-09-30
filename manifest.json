@@ -1,7 +1,7 @@
 {
   "id": "grocery-list",
   "name": "Grocery List",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "A Todoist project as a touch grocery list: tap to check off, \u00d7 to remove, add with the on-screen keyboard or 'Add again' chips. Filter by label to make one block per store (IGA, Costco\u2026).",
   "author": "Tanya",
   "license": "MIT",
