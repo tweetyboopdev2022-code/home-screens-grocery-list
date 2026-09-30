@@ -40,7 +40,7 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
   const accent = String(config.accentColor || '#16a34a');
   const staples = String(config.staples ?? '').split(',').map((s) => s.trim()).filter(Boolean);
   const maxPicks = Number(config.quickPicks ?? 8);
-  const refreshMs = Math.max(30000, Number(config.refreshIntervalMs ?? 60000));
+  const refreshMs = Math.max(10000, Math.min(Number(config.refreshIntervalMs ?? 15000), 15000));
   const ink = (a: number) => `color-mix(in srgb, ${style.textColor || 'currentColor'} ${Math.round(a * 100)}%, transparent)`;
 
   const [projectId, setProjectId] = React.useState<string | null>(null);
@@ -52,6 +52,9 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
   const [text, setText] = React.useState('');
   const [shift, setShift] = React.useState(true);
 
+  // Items ticked/removed here stay hidden even if a refresh that started earlier still lists them.
+  const gone = React.useRef<Map<string, number>>(new Map());
+  const notGone = (l: Task[]) => { const now = Date.now(); for (const [id, t] of gone.current) if (now - t > 120000) gone.current.delete(id); return l.filter((x) => !gone.current.has(x.id)); };
   const remember = (name: string) => setRecent((r) => { const n = pushRecent(r, name); writeRecent(recentKey, n); return n; });
 
   const load = React.useCallback(async () => {
@@ -64,7 +67,7 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
         pid = String(p.id); setProjectId(pid);
       }
       const tj = await call(`${API}/tasks?project_id=${pid}&limit=200`);
-      setTasks(sortTasks(filterByLabels(tj?.results ?? tj ?? [], labels, includeUnlabelled)));
+      setTasks(notGone(sortTasks(filterByLabels(tj?.results ?? tj ?? [], labels, includeUnlabelled))));
       setError(null);
     } catch (e) {
       const m = String((e as Error).message);
@@ -73,19 +76,28 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, projectName, labels.join(','), includeUnlabelled]);
 
-  React.useEffect(() => { load(); const id = setInterval(load, refreshMs); return () => clearInterval(id); }, [load, refreshMs]);
+  React.useEffect(() => {
+    load(); const id = setInterval(load, refreshMs);
+    const onVis = () => { if (!document.hidden) load(); }; document.addEventListener('visibilitychange', onVis);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); };
+  }, [load, refreshMs]);
 
   const mark = (id: string, on: boolean) => setBusy((b) => { const n = new Set(b); on ? n.add(id) : n.delete(id); return n; });
 
+  // Optimistic: the item leaves the list right away; it comes back only if Todoist refuses.
   const complete = async (t: Task) => {
     mark(t.id, true); remember(plain(t.content));
-    try { await call(`${API}/tasks/${t.id}/close`, 'POST'); setTasks((l) => (l ?? []).filter((x) => x.id !== t.id)); }
-    catch { /* keep it on the list */ } finally { mark(t.id, false); }
+    gone.current.set(t.id, Date.now()); setTasks((l) => (l ?? []).filter((x) => x.id !== t.id));
+    try { await call(`${API}/tasks/${t.id}/close`, 'POST'); }
+    catch { gone.current.delete(t.id); setTasks((l) => sortTasks([...(l ?? []), t])); setToast(`Couldn’t tick off ${plain(t.content)}`); }
+    finally { mark(t.id, false); }
   };
   const remove = async (t: Task) => {
     mark(t.id, true);
-    try { await call(`${API}/tasks/${t.id}`, 'DELETE'); setTasks((l) => (l ?? []).filter((x) => x.id !== t.id)); }
-    catch { /* ignore */ } finally { mark(t.id, false); }
+    gone.current.set(t.id, Date.now()); setTasks((l) => (l ?? []).filter((x) => x.id !== t.id));
+    try { await call(`${API}/tasks/${t.id}`, 'DELETE'); }
+    catch { gone.current.delete(t.id); setTasks((l) => sortTasks([...(l ?? []), t])); setToast(`Couldn’t remove ${plain(t.content)}`); }
+    finally { mark(t.id, false); }
   };
   const stores = parseLabels(String(config.storeLabels ?? 'IGA, Costco, Walmart, Amazon, Other'));
   const defaultStore = labels.find((l) => stores.some((s) => normalize(s) === normalize(l))) ?? labels[0] ?? '';
@@ -120,7 +132,7 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
   const tick = (t: Task) => {
     if (checked.has(t.id)) return;
     setChecked((c) => new Set(c).add(t.id));
-    setTimeout(() => { complete(t).finally(() => setChecked((c) => { const n = new Set(c); n.delete(t.id); return n; })); }, 700);
+    setTimeout(() => { complete(t).finally(() => setChecked((c) => { const n = new Set(c); n.delete(t.id); return n; })); }, 450);
   };
   const openAdd = (st: string) => { setText(''); setShift(true); setStore(st); setTyping(true); };
   const storeColors: Record<string, string> = {};
