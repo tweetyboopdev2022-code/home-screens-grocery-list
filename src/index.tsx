@@ -8,6 +8,7 @@ const PLUGIN_ID = 'grocery-list';
 const API = 'https://api.todoist.com/api/v1';
 const AUTH = { header: { Authorization: 'Bearer {{todoist_token}}' } };
 const RECENT_KEY = 'grocery-list:recent';
+const STORE_KEY = 'grocery-list:stores';
 
 function sdk() { return (window as any).__HS_SDK__; }
 
@@ -38,7 +39,9 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
   const title = String(config.title || (labels.length ? labels.join(' · ') : projectName));
   const recentKey = RECENT_KEY + (labels.length ? ':' + labels.join(',').toLowerCase() : '');
   const accent = String(config.accentColor || '#16a34a');
-  const staples = String(config.staples ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  // Staples: "Milk@IGA, Paper towels@Costco" (store optional)
+  const stapleDefs = String(config.staples ?? '').split(',').map((s) => s.trim()).filter(Boolean).map((s) => { const [n, st] = s.split('@').map((x) => x.trim()); return { name: n, store: st ?? '' }; });
+  const staples = stapleDefs.map((d) => d.name);
   const maxPicks = Number(config.quickPicks ?? 8);
   const refreshMs = Math.max(10000, Math.min(Number(config.refreshIntervalMs ?? 15000), 15000));
   const ink = (a: number) => `color-mix(in srgb, ${style.textColor || 'currentColor'} ${Math.round(a * 100)}%, transparent)`;
@@ -55,7 +58,14 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
   // Items ticked/removed here stay hidden even if a refresh that started earlier still lists them.
   const gone = React.useRef<Map<string, number>>(new Map());
   const notGone = (l: Task[]) => { const now = Date.now(); for (const [id, t] of gone.current) if (now - t > 120000) gone.current.delete(id); return l.filter((x) => !gone.current.has(x.id)); };
-  const remember = (name: string) => setRecent((r) => { const n = pushRecent(r, name); writeRecent(recentKey, n); return n; });
+  const remember = (name: string, lbl?: string) => {
+    setRecent((r) => { const n = pushRecent(r, name); writeRecent(recentKey, n); return n; });
+    if (lbl) { try { const m = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); m[normalize(name)] = lbl; localStorage.setItem(STORE_KEY, JSON.stringify(m)); } catch { /* ignore */ } }
+  };
+  const storeFor = (name: string): string => {
+    try { const m = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); if (m[normalize(name)]) return m[normalize(name)]; } catch { /* ignore */ }
+    return stapleDefs.find((d) => normalize(d.name) === normalize(name))?.store ?? '';
+  };
 
   const load = React.useCallback(async () => {
     try {
@@ -86,7 +96,7 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
 
   // Optimistic: the item leaves the list right away; it comes back only if Todoist refuses.
   const complete = async (t: Task) => {
-    mark(t.id, true); remember(plain(t.content));
+    mark(t.id, true); remember(plain(t.content), (t.labels ?? [])[0]);
     gone.current.set(t.id, Date.now()); setTasks((l) => (l ?? []).filter((x) => x.id !== t.id));
     try { await call(`${API}/tasks/${t.id}/close`, 'POST'); }
     catch { gone.current.delete(t.id); setTasks((l) => sortTasks([...(l ?? []), t])); setToast(`Couldn’t tick off ${plain(t.content)}`); }
@@ -111,7 +121,7 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
     if (!name || !projectId) return;
     if (shows(lbl) && isOnList(tasks ?? [], name)) return;
     const itemLabels = lbl ? [lbl] : [];
-    remember(name);
+    remember(name, lbl);
     const visible = shows(lbl);
     const tmp: Task = { id: `tmp-${Date.now()}`, content: name, child_order: 1e9, labels: itemLabels };
     if (visible) setTasks((l) => [...(l ?? []), tmp]);
@@ -252,6 +262,26 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
               return (
                 <button key={st} aria-label={`Add to ${st}`} onClick={() => openAdd(st)} style={btn({ display: 'flex', alignItems: 'center', gap: '0.3em', padding: '0.35em 0.8em', fontSize: '0.72em', fontWeight: 600, borderRadius: '999px', color: col, border: `0.1em solid ${col}`, background: 'transparent' })}>
                   <Icon d={I.plus} size="1em" stroke={2.5} />{st}
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {grouped && !error && tasks && (() => {
+        const featuredName = String(config.featuredStore ?? 'IGA');
+        const qp = quickPicks(recent, staples, list, maxPicks);
+        if (!qp.length) return null;
+        return (
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4em', marginTop: '0.55em', flexShrink: 0 }}>
+            <span style={{ fontSize: '0.6em', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.55, marginRight: '0.2em' }}>Quick add</span>
+            {qp.map((p) => {
+              const st = storeFor(p) || featuredName;
+              const col = storeColors[normalize(st)] ?? accent;
+              return (
+                <button key={p} aria-label={`Add ${p} to ${st}`} onClick={() => add(p, st)} style={btn({ display: 'flex', alignItems: 'center', gap: '0.35em', padding: '0.35em 0.8em', fontSize: '0.72em', fontWeight: 500, borderRadius: '999px' })}>
+                  <span style={{ width: '0.5em', height: '0.5em', borderRadius: '50%', background: col, flexShrink: 0 }} />{p}
                 </button>
               );
             })}

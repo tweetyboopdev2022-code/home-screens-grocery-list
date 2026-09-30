@@ -1,8 +1,8 @@
 {
   "id": "grocery-list",
   "name": "Grocery List",
-  "version": "1.6.1",
-  "description": "A Todoist project as a touch grocery list: tap to check off, × to remove, add with the on-screen keyboard or 'Add again' chips. Filter by label to make one block per store (IGA, Costco…).",
+  "version": "1.7.0",
+  "description": "A Todoist project as a touch grocery list: tap to check off, \u00d7 to remove, add with the on-screen keyboard or 'Add again' chips. Filter by label to make one block per store (IGA, Costco\u2026).",
   "author": "Tanya",
   "license": "MIT",
   "minAppVersion": "1.7.1",
@@ -75,7 +75,7 @@
       "staples": {
         "type": "string",
         "title": "Staples",
-        "description": "Comma-separated items always offered under 'Add again'.",
+        "description": "Comma-separated, optional store after @ \u2014 e.g. Milk@IGA, Paper towels@Costco. Shown as one-tap Quick add buttons with things you've bought lately.",
         "ui:widget": "textarea",
         "ui:group": "Content"
       },
@@ -152,7 +152,7 @@
     {
       "key": "todoist_token",
       "label": "Todoist API token",
-      "description": "Todoist → Settings → Integrations → Developer → API token.",
+      "description": "Todoist \u2192 Settings \u2192 Integrations \u2192 Developer \u2192 API token.",
       "required": true,
       "placeholder": "Your Todoist API token"
     }
