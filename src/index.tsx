@@ -214,7 +214,14 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
           </div>
         )}
         {!grouped && list.map((t) => renderRow(t))}
-        {grouped && !error && (() => {
+        {grouped && !error && tasks && list.length === 0 && (
+          <div style={{ margin: 'auto', textAlign: 'center' }}>
+            <div style={{ fontSize: '3em', lineHeight: 1 }}>✅</div>
+            <div style={{ fontSize: '1.4em', fontWeight: 700, marginTop: '0.3em' }}>All stocked up</div>
+            <div style={{ fontSize: '0.8em', opacity: 0.55, marginTop: '0.2em' }}>Nothing on the list. Tap a store or a quick-add item below.</div>
+          </div>
+        )}
+        {grouped && !error && list.length > 0 && (() => {
           const section = (g: typeof groups[number], grow: number) => (
             <div key={g.name} style={{ display: 'flex', flexDirection: 'column', gap: '0.3em', minHeight: '5.5em', flex: `${grow} 1 0`, overflow: 'hidden', padding: '0.6em 0.6em 0.5em', borderRadius: '0.8em', background: ink(0.03), borderTop: `0.22em solid ${g.color}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.45em', marginBottom: '0.15em', flexShrink: 0 }}>
@@ -255,7 +262,7 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
         const hidden = stores.filter((st) => !groups.some((g) => normalize(g.name) === normalize(st)));
         if (!hidden.length) return null;
         return (
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4em', marginTop: '0.6em', flexShrink: 0 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4em', marginTop: '0.6em', flexShrink: 0, fontSize: list.length ? '1em' : '1.35em' }}>
             <span style={{ fontSize: '0.6em', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.55, marginRight: '0.2em' }}>Add to</span>
             {hidden.map((st) => {
               const col = storeColors[normalize(st)] ?? accent;
@@ -274,7 +281,7 @@ export default function GroceryList({ config, style }: PluginComponentProps) {
         const qp = quickPicks(recent, staples, list, maxPicks);
         if (!qp.length) return null;
         return (
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4em', marginTop: '0.55em', flexShrink: 0 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4em', marginTop: '0.55em', flexShrink: 0, fontSize: list.length ? '1em' : '1.35em' }}>
             <span style={{ fontSize: '0.6em', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.55, marginRight: '0.2em' }}>Quick add</span>
             {qp.map((p) => {
               const st = storeFor(p) || featuredName;
